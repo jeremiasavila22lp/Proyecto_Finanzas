@@ -1,0 +1,12 @@
+if __name__ == "__main__":
+    try:
+        # Iniciamos el bucle principal
+        # Si hay login abierto, usamos ese. Si no, la ventana principal.
+        principal = ventana if ventana else ventana_login
+        if principal:
+            principal.mainloop()
+        else:
+            print("[ERROR] No se pudo inicializar ninguna ventana.")
+    except Exception as e:
+        logging.critical("CRASH DETECTADO: ", exc_info=True)
+        messagebox.showerror("Error Crítico", f"Ocurrió un error inesperado.\nRevisa app.log para más detalles.\n\nError: {e}")

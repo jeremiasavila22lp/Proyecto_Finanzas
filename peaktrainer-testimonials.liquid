@@ -1,0 +1,464 @@
+{% comment %}
+  PeakTrainer Testimonials Section
+  Shopify Compatible - .liquid file
+{% endcomment %}
+
+<style>
+  .peaktrainer-testimonials {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 80px 20px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow: hidden;
+  }
+
+  .testimonials-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .testimonials-header {
+    text-align: center;
+    margin-bottom: 60px;
+    animation: fadeInUp 0.8s ease-out;
+  }
+
+  .testimonials-header h2 {
+    font-size: 42px;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+
+  .testimonials-header p {
+    font-size: 18px;
+    color: #6c757d;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+    margin-bottom: 60px;
+  }
+
+  .testimonial-card {
+    background: white;
+    border-radius: 20px;
+    padding: 35px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    animation: fadeInUp 0.8s ease-out backwards;
+  }
+
+  .testimonial-card:nth-child(1) { animation-delay: 0.1s; }
+  .testimonial-card:nth-child(2) { animation-delay: 0.2s; }
+  .testimonial-card:nth-child(3) { animation-delay: 0.3s; }
+  .testimonial-card:nth-child(4) { animation-delay: 0.4s; }
+  .testimonial-card:nth-child(5) { animation-delay: 0.5s; }
+  .testimonial-card:nth-child(6) { animation-delay: 0.6s; }
+
+  .testimonial-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+
+  .testimonial-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  }
+
+  .testimonial-card:hover::before {
+    transform: scaleX(1);
+  }
+
+  .testimonial-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .testimonial-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-weight: 700;
+    margin-right: 16px;
+    flex-shrink: 0;
+  }
+
+  .testimonial-info h4 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 4px 0;
+  }
+
+  .testimonial-info p {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 0;
+  }
+
+  .testimonial-stars {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+
+  .star {
+    color: #ffc107;
+    font-size: 18px;
+  }
+
+  .testimonial-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #495057;
+    margin-bottom: 16px;
+  }
+
+  .testimonial-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+    color: #667eea;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .trust-indicators {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    margin-top: 60px;
+  }
+
+  .trust-card {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+  }
+
+  .trust-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  }
+
+  .trust-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    filter: grayscale(0%);
+  }
+
+  .trust-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .trust-card p {
+    font-size: 14px;
+    color: #6c757d;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .peaktrainer-testimonials {
+      padding: 60px 16px;
+    }
+
+    .testimonials-header h2 {
+      font-size: 32px;
+    }
+
+    .testimonials-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .trust-indicators {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+  }
+</style>
+
+<section class="peaktrainer-testimonials">
+  <div class="testimonials-container">
+    
+    <!-- Header -->
+    <div class="testimonials-header">
+      <h2>{{ section.settings.section_title | default: "What Our Customers Say" }}</h2>
+      <p>{{ section.settings.section_subtitle | default: "Thousands of athletes and health-conscious individuals are already transforming their performance with PeakTrainer" }}</p>
+    </div>
+
+    <!-- Testimonials Grid -->
+    <div class="testimonials-grid">
+      
+      <!-- Testimonial 1 -->
+      <div class="testimonial-card">
+        <div class="testimonial-header">
+          <div class="testimonial-avatar">MC</div>
+          <div class="testimonial-info">
+            <h4>Maria Contreras</h4>
+            <p>Marathon Runner</p>
+          </div>
+        </div>
+        <div class="testimonial-stars">
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+        </div>
+        <p class="testimonial-text">
+          "After 3 weeks using PeakTrainer, my lung capacity improved noticeably. Now I can run longer distances without feeling fatigued. It's incredible how something so compact can make such a difference!"
+        </p>
+        <span class="testimonial-badge">Verified Purchase</span>
+      </div>
+
+      <!-- Testimonial 2 -->
+      <div class="testimonial-card">
+        <div class="testimonial-header">
+          <div class="testimonial-avatar">JR</div>
+          <div class="testimonial-info">
+            <h4>Jorge Ramirez</h4>
+            <p>Professional Cyclist</p>
+          </div>
+        </div>
+        <div class="testimonial-stars">
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+        </div>
+        <p class="testimonial-text">
+          "As a cyclist, respiratory endurance is key. PeakTrainer helped me strengthen my breathing muscles and now I can maintain a more consistent pace in competitions. The adjustable resistance is perfect for progressive training."
+        </p>
+        <span class="testimonial-badge">Verified Purchase</span>
+      </div>
+
+      <!-- Testimonial 3 -->
+      <div class="testimonial-card">
+        <div class="testimonial-header">
+          <div class="testimonial-avatar">AL</div>
+          <div class="testimonial-info">
+            <h4>Ana Lopez</h4>
+            <p>Yoga Instructor</p>
+          </div>
+        </div>
+        <div class="testimonial-stars">
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+        </div>
+        <p class="testimonial-text">
+          "I use it before my yoga classes to improve my breath control. The silicone mouthpiece is very comfortable and hygienic. My students have noticed the difference in my ability to guide prolonged breathing exercises."
+        </p>
+        <span class="testimonial-badge">Verified Purchase</span>
+      </div>
+
+      <!-- Testimonial 4 -->
+      <div class="testimonial-card">
+        <div class="testimonial-header">
+          <div class="testimonial-avatar">DP</div>
+          <div class="testimonial-info">
+            <h4>Diego Perez</h4>
+            <p>Olympic Swimmer</p>
+          </div>
+        </div>
+        <div class="testimonial-stars">
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+        </div>
+        <p class="testimonial-text">
+          "In swimming, every breath counts. PeakTrainer allowed me to optimize my lung capacity and improve my times. It's portable, so I take it to all my training sessions. Visible results in just 2 weeks!"
+        </p>
+        <span class="testimonial-badge">Verified Purchase</span>
+      </div>
+
+      <!-- Testimonial 5 -->
+      <div class="testimonial-card">
+        <div class="testimonial-header">
+          <div class="testimonial-avatar">CS</div>
+          <div class="testimonial-info">
+            <h4>Carla Sanchez</h4>
+            <p>Personal Trainer</p>
+          </div>
+        </div>
+        <div class="testimonial-stars">
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+        </div>
+        <p class="testimonial-text">
+          "I recommend PeakTrainer to all my clients. It's an essential tool for improving cardiovascular endurance. The material quality is excellent and the results are impressive. An investment worth every penny!"
+        </p>
+        <span class="testimonial-badge">Verified Purchase</span>
+      </div>
+
+      <!-- Testimonial 6 -->
+      <div class="testimonial-card">
+        <div class="testimonial-header">
+          <div class="testimonial-avatar">RM</div>
+          <div class="testimonial-info">
+            <h4>Roberto Martinez</h4>
+            <p>Amateur Boxer</p>
+          </div>
+        </div>
+        <div class="testimonial-stars">
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+        </div>
+        <p class="testimonial-text">
+          "Boxing demands extreme endurance. With PeakTrainer, I strengthened my diaphragm and now I can last full rounds without losing my breath. RMT training really works. The best thing I've tried!"
+        </p>
+        <span class="testimonial-badge">Verified Purchase</span>
+      </div>
+
+    </div>
+
+    <!-- Trust Indicators -->
+    <div class="trust-indicators">
+      
+      <div class="trust-card">
+        <div class="trust-icon">👥</div>
+        <h3>Satisfied Customers</h3>
+        <p>We empower individuals and athletes to enhance their physical and cardiovascular well-being to lead a better life and break limits.</p>
+      </div>
+
+      <div class="trust-card">
+        <div class="trust-icon">💬</div>
+        <h3>24/7 Support</h3>
+        <p>Have questions? Reach out to us at any time at <strong>{{ section.settings.trust_email | default: "resistancefitt@mail.com" }}</strong>. We're here to help.</p>
+      </div>
+
+      <div class="trust-card">
+        <div class="trust-icon">💯</div>
+        <h3>Full Refund</h3>
+        <p>If for any reason you are not satisfied within {{ section.settings.refund_days | default: 14 }} days of receiving your product, we will refund 100% of your money.</p>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<script>
+  // Animación de entrada cuando la sección es visible
+  document.addEventListener('DOMContentLoaded', function() {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, {
+      threshold: 0.1
+    });
+
+    const cards = document.querySelectorAll('.testimonial-card, .trust-card');
+    cards.forEach(card => observer.observe(card));
+  });
+</script>
+
+{% schema %}
+{
+  "name": "PeakTrainer - Testimonials",
+  "tag": "section",
+  "class": "section-peaktrainer-testimonials",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Testimonials Settings"
+    },
+    {
+      "type": "text",
+      "id": "section_title",
+      "label": "Section Title",
+      "default": "What Our Customers Say"
+    },
+    {
+      "type": "textarea",
+      "id": "section_subtitle",
+      "label": "Subtitle",
+      "default": "Thousands of athletes and health-conscious individuals are already transforming their performance with PeakTrainer"
+    },
+    {
+      "type": "header",
+      "content": "Trust Indicators"
+    },
+    {
+      "type": "text",
+      "id": "trust_email",
+      "label": "Support Email",
+      "default": "resistancefitt@mail.com"
+    },
+    {
+      "type": "number",
+      "id": "refund_days",
+      "label": "Refund Guarantee Days",
+      "default": 14
+    }
+  ],
+  "presets": [
+    {
+      "name": "PeakTrainer Testimonials",
+      "category": "Custom"
+    }
+  ]
+}
+{% endschema %}

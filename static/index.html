@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+
+
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanzasPro</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <!-- Toastify JS -->
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+</head>
+
+<body>
+    <div id="alert-system" class="alert-bar" style="display: none;">
+        <span>⚠️ PELIGRO: ¡Has superado tu presupuesto mensual! Revisa tus gastos urgentemente ⚠️</span>
+    </div>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h1>FinanzasPro</h1>
+                <p id="usuario-nombre">Cargando...</p>
+            </div>
+            <button onclick="cerrarSesion()"
+                style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                🚪 Cerrar Sesión
+            </button>
+        </div>
+        <p>Gestiona tus gastos de forma inteligente</p>
+
+        <!-- Dashboard Links -->
+        <div class="nav-links">
+            <a href="/gastos" target="_blank">Ver JSON Gastos</a>
+            <a href="/gastos/resumen" target="_blank">Ver JSON Resumen</a>
+            <a href="/docs" target="_blank">Documentación API</a>
+        </div>
+
+        <!-- Nueva sección para ver el token fácilmente -->
+        <div id="token-section"
+            style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 12px; padding: 15px; margin: 20px 0; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin: 0; color: #333;">🔑 Mi Llave de Acceso (Token)</h4>
+                <button onclick="copiarToken()"
+                    style="background: #6200EE; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Copiar</button>
+            </div>
+            <div id="token-view"
+                style="font-family: monospace; font-size: 11px; color: #666; word-break: break-all; background: white; padding: 10px; border-radius: 8px; border: 1px inset #eee; max-height: 60px; overflow-y: auto;">
+                -- cargando llave --
+            </div>
+            <p style="font-size: 11px; color: #999; margin: 8px 0 0 0;">Usa esta llave en la <a href="/docs"
+                    target="_blank">Documentación API</a> con el botón <b>Authorize</b></p>
+        </div>
+        <div class="resumen-container">
+            <h3> 📊 Resumen de Mes</h3>
+            <div class="kpi-card" style="border-left: 5px solid #2bc48a;">
+                <span>Balance Neto</span>
+                <strong id="balance-neto">$0.00</strong>
+            </div>
+            <div class="kpi-card">
+                <span>Total Gastado</span>
+                <strong id="total-gastado">$0.00</strong>
+            </div>
+            <div class="kpi-card">
+                <span>Presupuesto</span>
+                <strong id="estado-presupuesto">--</strong>
+                <button onclick="editarPresupuesto()"
+                    style="margin-top: 10px; padding: 5px 15px; background: #6200EE; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                    ✏️ Editar
+                </button>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <h3>➕ Nuevo Gasto</h3>
+            <input type="number" id="monto" placeholder="Monto (ej: 1500)" required>
+            <input type="text" id="descripcion" placeholder="Descripcion (ej: Pizza)" required>
+            <input type="text" id="categoria" placeholder="Categoria (ej: Comida)" required>
+            <button onclick="crearGasto()">Guardar Gasto</button>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin: 30px 0;">
+            <div class="contenedor-grafico"
+                style="flex: 1; min-width: 300px; max-width: 450px; height: 350px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <canvas id="miGrafico"></canvas>
+            </div>
+
+            <div class="contenedor-grafico"
+                style="flex: 1; min-width: 300px; max-width: 450px; height: 350px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <canvas id="graficoComparacion"></canvas>
+            </div>
+        </div>
+
+        <div class="contenedor-grafico"
+            style="width: 100%; max-width: 900px; height: 400px; margin: 20px auto; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <canvas id="graficoDiario"></canvas>
+            <div style="text-align: center; margin-top: 10px; font-weight: bold; color: #4ECDC4;">
+                💰 Acumulado del mes: <span id="acumulado-valor">$0.00</span>
+            </div>
+        </div>
+
+        <!-- Tabla de Gastos -->
+        <div class="gastos-container">
+            <h2>Listado de Gastos Recientes</h2>
+            <input type="text" id="filtro-busqueda" placeholder="🔍 Buscar por descripción o categoría..."
+                onkeyup="filtrarTabla()"
+                style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ddd;">
+
+            <button id="btn-cargar" onclick="cargarGastos()">Actualizar Lista</button>
+            <button onclick="exportarCSV()" style="background: #4CAF50; margin-left: 10px;">
+                📊 Exportar a Excel
+            </button>
+            <button onclick="descargarPDF()" style="background: #E91E63; margin-left: 10px;">
+                📄 Reporte Ejecutivo (PDF)
+            </button>
+
+            <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr style="background-color: #BB86FC; color: #000000;">
+                        <th>ID</th>
+                        <th>Descripción</th>
+                        <th>Monto</th>
+                        <th>Categoría</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-gastos">
+                    <!-- Aquí se insertarán los datos con JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="script.js?v=6"></script>
+</body>
+
+</html>

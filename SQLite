@@ -1,0 +1,90 @@
+# SQLite Python
+
+# importacion de sqlite3
+
+import sqlite3 as sql
+
+# Crear base de datos
+conn = sql.connect('mi_base.db')
+cursor = conn.cursor()
+
+# Crear tabla PROCESOS
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS PROCESOS (
+        ID INTEGER PRIMARY KEY AUTOINCREMENT,
+        NOMBRE TEXT NOT NULL,
+        DESCRIPCION TEXT,
+        FECHA_INICIO DATETIME,
+        FECHA_FIN DATETIME,
+        ESTADO TEXT
+    )
+''')
+
+# Crear filas de la tabla PROCESOS
+"""
+insert PROCESOS (NOMBRE, DESCRIPCION, FECHA_INICIO, FECHA_FIN, ESTADO) values
+conn.execute("INSERT INTO PROCESOS (NOMBRE, DESCRIPCION, FECHA_INICIO, FECHA_FIN, ESTADO, PRIORIDAD) VALUES ('Proceso 2', 'Descripcion 2', '2022-02-01', '2022-02-02', 'Pendiente', 'Alta')")
+
+# Crear columnas de la tabla PROCESOS
+
+select * from PROCESOS
+cursor.execute("ALTER TABLE PROCESOS ADD COLUMN PRIORIDAD TEXT")
+conn.commit() # Guardar los cambios y inicio la base de datos
+
+# Cerrar la base de datos
+
+conn.close()
+
+# integracion de datos en la tabla PROCESOS
+
+insert into PROCESOS (NOMBRE, DESCRIPCION, FECHA_INICIO, FECHA_FIN, ESTADO) values
+('Proceso 1', 'Descripcion 1', '2022-01-01', '2022-01-02', 'Completado')
+"""
+# Creacion de Base de datos 
+
+def createDB():
+    conn = sql.connect('Datosbase1.db')
+    conn.commit()
+    conn.close()
+
+def CreateTable():
+    conn = sql.connect('Datosbase1.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS PROCESOS (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            NOMBRE TEXT NOT NULL,
+            DESCRIPCION TEXT,
+            FECHA_INICIO DATETIME,
+            FECHA_FIN DATETIME,
+            ESTADO TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def insertRow(NOMBRE, DESCRIPCION, FECHA_INICIO, FECHA_FIN, ESTADO):
+    conn = sql.connect('Datosbase1.db')
+    cursor = conn.cursor()
+    Instrucciones = "INSERT INTO PROCESOS (NOMBRE, DESCRIPCION, FECHA_INICIO, FECHA_FIN, ESTADO) VALUES (?, ?, ?, ?, ?)"
+    cursor.execute(Instrucciones, (NOMBRE, DESCRIPCION, FECHA_INICIO, FECHA_FIN, ESTADO))
+    conn.commit()
+    conn.close()
+
+def readRows():
+    conn = sql.connect('Datosbase1.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM PROCESOS")
+    datos = cursor.fetchall()
+    
+    print("\n--- CONTENIDO DE LA TABLA PROCESOS ---")
+    for fila in datos:
+        print(fila)
+    conn.close()
+
+if __name__ == "__main__":
+    # createDB()
+    CreateTable()
+    insertRow("VI", "Alta y tatuada", "2022-01-01", "2022-01-02", "Completado")
+    readRows()
