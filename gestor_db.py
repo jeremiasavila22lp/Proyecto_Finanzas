@@ -242,7 +242,10 @@ class GestorGastos:
         Retorna (True, user_id) si fue exitoso, (False, mensaje_error) si falló
         """
         try:
-            # Bcrypt tiene un límite de 72 caracteres. Truncamos por seguridad.
+            # Bcrypt tiene un límite de 72 bytes. Aseguramos el truncado y la codificación.
+            if isinstance(password, str):
+                password = password.encode('utf-8')
+            
             if len(password) > 72:
                 password = password[:72]
 
@@ -270,6 +273,9 @@ class GestorGastos:
         Retorna (True, user_data) si es correcto, (False, mensaje_error) si falla
         """
         try:
+            if isinstance(password, str):
+                password = password.encode('utf-8')
+
             if len(password) > 72:
                 password = password[:72]
 
