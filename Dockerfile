@@ -1,5 +1,5 @@
-# Usar imagen base ligera de Python
-FROM python:3.10-slim
+# Usar imagen base ligera de Python 3.11 para compatibilidad con librerías modernas
+FROM python:3.11-slim
 
 # Establecer el directorio de trabajo dentro del contenedor
 WORKDIR /app
@@ -21,5 +21,5 @@ COPY . .
 # Exponer el puerto en el que corre FastAPI
 EXPOSE 8000
 
-# Comando para iniciar la aplicación usando uvicorn
-CMD ["python", "-m", "uvicorn", "api_corregido:app", "--host", "0.0.0.0", "--port", "8000"]
+# Comando para iniciar la aplicación usando uvicorn, adaptado para Render
+CMD ["sh", "-c", "uvicorn api_corregido:app --host 0.0.0.0 --port ${PORT:-8000}"]
