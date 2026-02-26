@@ -1,4 +1,5 @@
 import sqlite3
+import psycopg2
 import logging
 from datetime import datetime
 from typing import List, Tuple
@@ -6,6 +7,7 @@ import csv
 import matplotlib.pyplot as plt
 from passlib.context import CryptContext
 import threading
+from psycopg2.extras import RealDictCursor
 
 # Configuración de Passlib para hashing seguro (Bcrypt)
 # Lo definimos a nivel de módulo para que sea accesible por todas las clases
@@ -14,24 +16,47 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class GestorGastos: 
     def __init__(self, finanzas_bd):
-        self.conexion = sqlite3.connect(finanzas_bd, check_same_thread=False) # Primero conectamos
-        self.conexion.row_factory = sqlite3.Row      # Luego activamos el modo diccionario
-        self.cursor = self.conexion.cursor()
         self.lock = threading.RLock()
 
+        if finanzas_bd.startswith("postgres://") or finanzas_bd.startswith("postgresql://"):
+            self.es_postgresql = True
+            try:
+                self.conexion = psycopg2.connect(finanzas_bd)
+                self.cursor = self.conexion.cursor(cursor_factory=RealDictCursor) 
+                print("[OK] Conectado a PostgreSQL (Neon)")
+            except Exception as e:
+                print(f"[ERROR] No se pudo conectar a PostgreSQL: {e}")
+                logging.error(f"Error de conexión a la BD: {e}")
+                raise e # Re-lanzamos para que se vea en los logs de Render
+        else:
+            self.es_postgresql = False
+            self.conexion = sqlite3.connect(finanzas_bd, check_same_thread=False)
+            self.conexion.row_factory = sqlite3.Row
+            self.cursor = self.conexion.cursor()
+            print("[OK] Conectado a SQLite Local")
+        
+        self.p = "%s" if self.es_postgresql else "?"
+        self.serial_type = "SERIAL PRIMARY KEY" if self.es_postgresql else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        self.default_date = "CURRENT_TIMESTAMP" if self.es_postgresql else "CURRENT_TIMESTAMP"
         # Crear tabla de usuarios
-        self.cursor.execute("""
+        self.cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS usuarios (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {self.serial_type},
                 nombre TEXT NOT NULL,
                 email TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
-                fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
+                fecha_creacion TEXT DEFAULT {self.default_date},
                 presupuesto REAL DEFAULT 5000.0
             )
         """)
-        self.cursor.execute("PRAGMA table_info(usuarios)")
-        columnas_u = [col[1] for col in self.cursor.fetchall()]
+        # Migración: Verificar si existe la columna 'fecha', si no, agregarla
+        if self.es_postgresql:
+            self.cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'usuarios'")
+            columnas_u = [fila['column_name'] for fila in self.cursor.fetchall()]
+        else:
+            self.cursor.execute("PRAGMA table_info(usuarios)")
+            columnas_u = [col[1] for col in self.cursor.fetchall()]
+
         if 'presupuesto' not in columnas_u:
             self.cursor.execute("ALTER TABLE usuarios ADD COLUMN presupuesto REAL DEFAULT 5000.0")
             self.conexion.commit()
@@ -39,25 +64,31 @@ class GestorGastos:
         else:
             print("[OK] Columna 'presupuesto' ya existe en la tabla usuarios.")
         
-        self.cursor.execute("""
+        self.cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS gastos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {self.serial_type},
                 monto REAL,
                 categoria TEXT,
                 descripcion TEXT,
-                fecha TEXT,
+                fecha TEXT DEFAULT {self.default_date},
                 usuario_id INTEGER,
                 FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
             )
         """)
-        
-        # Migración: Verificar si existe la columna 'fecha', si no, agregarla
-        self.cursor.execute("PRAGMA table_info(gastos)")
-        columnas = [col[1] for col in self.cursor.fetchall()]
+        self.conexion.commit()
+
+        if self.es_postgresql:
+            self.cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'gastos'")
+            columnas = [fila['column_name'] for fila in self.cursor.fetchall()]
+        else:
+            self.cursor.execute("PRAGMA table_info(gastos)")
+            columnas = [col[1] for col in self.cursor.fetchall()]
+
         if 'fecha' not in columnas:
             self.cursor.execute("ALTER TABLE gastos ADD COLUMN fecha TEXT")
             # Actualizar registros viejos con fecha actual
-            self.cursor.execute("UPDATE gastos SET fecha = date('now') WHERE fecha IS NULL")
+            f_now = "CURRENT_DATE" if self.es_postgresql else "date('now')"
+            self.cursor.execute(f"UPDATE gastos SET fecha = {f_now} WHERE fecha IS NULL")
             self.conexion.commit()
         else:
             print("[OK] Columna 'fecha' ya existe en la tabla gastos.")
@@ -76,20 +107,22 @@ class GestorGastos:
     def agregar_gasto(self, monto, categoria, descripcion, usuario_id=None):
         try:
             # Insertamos con la fecha actual y el usuario_id
-            query = "INSERT INTO gastos (monto, categoria, descripcion, fecha, usuario_id) VALUES (?, ?, ?, date('now', 'localtime'), ?)"
+            fecha_sql = "CURRENT_DATE" if self.es_postgresql else "date('now','localtime')"
+            query = f"INSERT INTO gastos (monto, categoria, descripcion, fecha, usuario_id) VALUES ({self.p}, {self.p}, {self.p}, {fecha_sql}, {self.p})"
             self.cursor.execute(query, (float(monto), categoria.lower(), descripcion, usuario_id))
             self.conexion.commit()
             return True
         except ValueError:
             return False
         except Exception as e:
+            logging.error(f"Error al agregar gasto: {e}")
             return False
 
     def obtener_total(self, usuario_id=None):
         try:
             with self.lock:
                 if usuario_id is not None:
-                    self.cursor.execute("SELECT SUM(monto) FROM gastos WHERE usuario_id = ?", (usuario_id,))
+                    self.cursor.execute(f"SELECT SUM(monto) FROM gastos WHERE usuario_id = {self.p}", (usuario_id,))
                 else:
                     self.cursor.execute("SELECT SUM(monto) FROM gastos")
                 resultado = self.cursor.fetchone()
@@ -100,7 +133,7 @@ class GestorGastos:
             return 0.0
     
     def filtrar_por_categoria(self, cat):
-        query = "SELECT monto, categoria, descripcion, fecha FROM gastos WHERE categoria = ?"
+        query = f"SELECT monto, categoria, descripcion, fecha FROM gastos WHERE categoria = {self.p}"
         self.cursor.execute(query, (cat.lower(),))
         return self.cursor.fetchall()
     
@@ -122,7 +155,7 @@ class GestorGastos:
         """Obtiene todos los gastos de la base de datos, opcionalmente filtrados por usuario"""
         with self.lock:
             if usuario_id is not None:
-                self.cursor.execute("SELECT id, monto, categoria, fecha, descripcion FROM gastos WHERE usuario_id = ? ORDER BY fecha DESC", (usuario_id,))
+                self.cursor.execute(f"SELECT id, monto, categoria, fecha, descripcion FROM gastos WHERE usuario_id = {self.p} ORDER BY fecha DESC", (usuario_id,))
             else:
                 self.cursor.execute("SELECT id, monto, categoria, fecha, descripcion FROM gastos ORDER BY fecha DESC")
             resultados = self.cursor.fetchall()
@@ -138,10 +171,10 @@ class GestorGastos:
 
     def obtener_gastos_por_rango(self, fecha_inicio, fecha_fin):
         """Retorna un diccionario {categoria: total} con gastos en el rango de fechas"""
-        query = """
+        query = f"""
             SELECT categoria, SUM(monto) 
             FROM gastos 
-            WHERE fecha BETWEEN ? AND ? 
+            WHERE fecha BETWEEN {self.p} AND {self.p} 
             GROUP BY categoria
         """
         self.cursor.execute(query, (fecha_inicio, fecha_fin))
@@ -150,7 +183,7 @@ class GestorGastos:
 
     def obtener_todos_los_gastos_filtrados(self, fecha_inicio, fecha_fin):
         """Obtiene los gastos filtrados por fecha como diccionarios"""
-        query = "SELECT id, monto, categoria, fecha, descripcion FROM gastos WHERE fecha BETWEEN ? AND ? ORDER BY fecha DESC"
+        query = f"SELECT id, monto, categoria, fecha, descripcion FROM gastos WHERE fecha BETWEEN {self.p} AND {self.p} ORDER BY fecha DESC"
         self.cursor.execute(query, (fecha_inicio, fecha_fin))
         resultados = self.cursor.fetchall()
         return [dict(fila) for fila in resultados]
@@ -170,12 +203,12 @@ class GestorGastos:
         """Elimina un gasto específico por su ID"""
         try:
             if usuario_id is not None:
-                self.cursor.execute("DELETE FROM gastos WHERE id = ? AND usuario_id = ?", (id_gasto, usuario_id))
+                self.cursor.execute(f"DELETE FROM gastos WHERE id = {self.p} AND usuario_id = {self.p}", (id_gasto, usuario_id))
                 # Verificar si se borró algo (si rowcount es 0, es que no existía o no era de ese usuario)
                 if self.cursor.rowcount == 0:
                     return False
             else:
-                self.cursor.execute("DELETE FROM gastos WHERE id = ?", (id_gasto,))
+                self.cursor.execute(f"DELETE FROM gastos WHERE id = {self.p}", (id_gasto,))
             
             self.conexion.commit()
             return True
@@ -189,19 +222,19 @@ class GestorGastos:
             monto_float = float(nuevo_monto)
             
             if usuario_id is not None:
-                query = """
+                query = f"""
                     UPDATE gastos 
-                    SET monto = ?, categoria = ?, descripcion = ?, fecha = ?
-                    WHERE id = ? AND usuario_id = ?
+                    SET monto = {self.p}, categoria = {self.p}, descripcion = {self.p}, fecha = {self.p}
+                    WHERE id = {self.p} AND usuario_id = {self.p}
                 """
                 self.cursor.execute(query, (monto_float, categoria, descripcion, fecha, id_gasto, usuario_id))
                 if self.cursor.rowcount == 0:
                     return False
             else:
-                query = """
+                query = f"""
                     UPDATE gastos 
-                    SET monto = ?, categoria = ?, descripcion = ?, fecha = ?
-                    WHERE id = ?
+                    SET monto = {self.p}, categoria = {self.p}, descripcion = {self.p}, fecha = {self.p}
+                    WHERE id = {self.p}
                 """
                 self.cursor.execute(query, (monto_float, categoria, descripcion, fecha, id_gasto))
                 
@@ -223,10 +256,10 @@ class GestorGastos:
 
     def buscar_gastos(self, texto):
         """Busca gastos y los devuelve como diccionarios"""
-        query = """
+        query = f"""
             SELECT id, monto, categoria, fecha, descripcion 
             FROM gastos
-            WHERE descripcion LIKE ? OR categoria LIKE ? OR fecha LIKE ?
+            WHERE descripcion LIKE {self.p} OR categoria LIKE {self.p} OR fecha LIKE {self.p}
             ORDER BY fecha DESC
         """
         param = f"%{texto}%"
@@ -252,15 +285,25 @@ class GestorGastos:
             # Hashing seguro con bcrypt
             password_hash = pwd_context.hash(password)
             
-            self.cursor.execute("""
-                INSERT INTO usuarios (nombre, email, password_hash) 
-                VALUES (?, ?, ?)
-            """, (nombre, email, password_hash))
+            if self.es_postgresql:
+                self.cursor.execute(f"""
+                    INSERT INTO usuarios (nombre, email, password_hash) 
+                    VALUES ({self.p}, {self.p}, {self.p}) RETURNING id
+                """, (nombre, email, password_hash))
+                fila = self.cursor.fetchone()
+                user_id = fila['id'] if isinstance(fila, dict) else fila[0]
+            else:
+                self.cursor.execute(f"""
+                    INSERT INTO usuarios (nombre, email, password_hash) 
+                    VALUES ({self.p}, {self.p}, {self.p})
+                """, (nombre, email, password_hash))
+                user_id = self.cursor.lastrowid
+            
             self.conexion.commit()
             
             # Obtener el ID del usuario recién creado
-            return (True, self.cursor.lastrowid)
-        except sqlite3.IntegrityError:
+            return (True, user_id)
+        except (sqlite3.IntegrityError, psycopg2.IntegrityError):
             # Email ya existe
             return (False, "El email ya está registrado")
         except Exception as e:
@@ -279,10 +322,10 @@ class GestorGastos:
             if len(password) > 72:
                 password = password[:72]
 
-            self.cursor.execute("""
+            self.cursor.execute(f"""
                 SELECT id, nombre, email, password_hash, fecha_creacion, presupuesto 
                 FROM usuarios 
-                WHERE email = ?
+                WHERE email = {self.p}
             """, (email,))
             
             resultado = self.cursor.fetchone()
@@ -307,7 +350,7 @@ class GestorGastos:
         """Busca el presupuesto personalizado de un usuario"""
         try:
             with self.lock:
-                self.cursor.execute("SELECT presupuesto FROM usuarios WHERE id = ?", (user_id,))
+                self.cursor.execute(f"SELECT presupuesto FROM usuarios WHERE id = {self.p}", (user_id,))
                 resultado = self.cursor.fetchone()
                 return resultado[0] if resultado else 5000.0
         except Exception as e:
@@ -317,7 +360,7 @@ class GestorGastos:
     def actualizar_presupuesto_usuario(self, user_id, nuevo_limite):
         """Actualiza el presupuesto en la tabla de usuarios"""
         try:
-            self.cursor.execute("UPDATE usuarios SET presupuesto = ? WHERE id = ?", (float(nuevo_limite), user_id))
+            self.cursor.execute(f"UPDATE usuarios SET presupuesto = {self.p} WHERE id = {self.p}", (float(nuevo_limite), user_id))
             self.conexion.commit()
             return True
         except Exception as e:
@@ -327,10 +370,10 @@ class GestorGastos:
     def obtener_usuario_por_id(self, user_id):
         """Obtiene los datos de un usuario por su ID"""
         try:
-            self.cursor.execute("""
+            self.cursor.execute(f"""
                 SELECT id, nombre, email, fecha_creacion, presupuesto 
                 FROM usuarios 
-                WHERE id = ?
+                WHERE id = {self.p}
             """, (user_id,))
             resultado = self.cursor.fetchone()
             return dict(resultado) if resultado else None
@@ -344,9 +387,9 @@ class GestorConPresupuesto(GestorGastos):
         super().__init__(archivo)
         
         # Tabla de historial de cierres
-        self.cursor.execute('''
+        self.cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS historial_cierres (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {self.serial_type},
                 fecha_cierre TEXT,
                 total_gastado REAL,
                 presupuesto_fijado REAL,
@@ -361,8 +404,17 @@ class GestorConPresupuesto(GestorGastos):
     def guardar_presupuesto_global(self, nuevo_limite):
         """Guarda el presupuesto global (obsoleto, pero se mantiene por compatibilidad)"""
         self.limite_global = float(nuevo_limite)
-        self.cursor.execute("INSERT OR REPLACE INTO configuracion (clave, valor) VALUES ('presupuesto', ?)", (self.limite_global,))
-        self.conexion.commit()
+        if self.es_postgresql:
+            query = f"INSERT INTO configuracion (clave, valor) VALUES ('presupuesto', {self.p}) ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor"
+        else:
+            query = f"INSERT OR REPLACE INTO configuracion (clave, valor) VALUES ('presupuesto', {self.p})"
+        
+        try:
+            self.cursor.execute(query, (self.limite_global,))
+            self.conexion.commit()
+        except:
+             # Si no existe la tabla configuración, ignoramos por ahora (es obsoleto)
+             pass
     
     def agregar_gasto(self, monto, categoria, descripcion, usuario_id=None, forzar=False):
         # 1. Buscamos el presupuesto REAL del usuario en la tabla usuarios
@@ -408,10 +460,10 @@ class GestorConPresupuesto(GestorGastos):
         """Retorna un diccionario con el total gastado por categoría""" 
         with self.lock:
             if usuario_id is not None:
-                self.cursor.execute("""
+                self.cursor.execute(f"""
                     SELECT categoria, SUM(monto) 
                     FROM gastos 
-                    WHERE usuario_id = ?
+                    WHERE usuario_id = {self.p}
                     GROUP BY categoria
                 """, (usuario_id,))
             else:
@@ -427,10 +479,10 @@ class GestorConPresupuesto(GestorGastos):
         """Retorna un diccionario con el total gastado por día""" 
         with self.lock:
             if usuario_id is not None:
-                self.cursor.execute("""
+                self.cursor.execute(f"""
                     SELECT fecha, SUM(monto) 
                     FROM gastos 
-                    WHERE usuario_id = ?
+                    WHERE usuario_id = {self.p}
                     GROUP BY fecha
                     ORDER BY fecha ASC
                 """, (usuario_id,))
@@ -495,11 +547,11 @@ class GestorConPresupuesto(GestorGastos):
             self.cursor.execute("SELECT SUM(monto) FROM gastos")
             res = self.cursor.fetchone()
             total_actual = res[0] if res and res[0] else 0.0
-            presupuesto_actual = self.limite
+            presupuesto_actual = self.limite_global
             estado = "Bajo Control" if total_actual <= presupuesto_actual else "Excedido"
-            self.cursor.execute("""
+            self.cursor.execute(f"""
                 INSERT INTO historial_cierres (fecha_cierre, total_gastado, presupuesto_fijado, estado) 
-                VALUES (?, ?, ?, ?)
+                VALUES ({self.p}, {self.p}, {self.p}, {self.p})
             """, (fecha_hoy, total_actual, presupuesto_actual, estado))
             self.cursor.execute("DELETE FROM gastos")
             self.conexion.commit()

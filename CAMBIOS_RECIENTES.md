@@ -5,10 +5,12 @@
 ### 1️⃣ **Mejora de Colores en el Historial**
 
 **Antes:**
+
 - Texto oscuro difícil de leer en fondo oscuro
 - Encabezados poco visibles
 
 **Ahora:**
+
 - ✨ **Texto blanco (#ffffff)** para todas las filas
 - ✨ **Encabezados blancos en negrita** con fondo más claro
 - ✨ **Fondo de tabla:** #2a2a3d (gris azulado)
@@ -18,6 +20,7 @@
 ### 2️⃣ **Nueva Categoría Agregada**
 
 **Lista de Categorías Actualizada:**
+
 1. Comida
 2. Transporte
 3. Entretenimiento
@@ -81,6 +84,7 @@ CATEGORIAS_COMUNES = [
 ```
 
 **Ejemplos de otras categorías:**
+
 - "Viajes"
 - "Tecnología"
 - "Hogar"
@@ -93,15 +97,50 @@ CATEGORIAS_COMUNES = [
 ## ✨ Resultado Visual
 
 **Historial Mejorado:**
+
 - ✅ Texto completamente legible
 - ✅ Contraste perfecto con el fondo oscuro
 - ✅ Encabezados destacados
 - ✅ Selección visual clara
 
 **Gráficos:**
+
 - ✅ 9 colores vibrantes para 9 categorías
 - ✅ Cada categoría tiene su color único
 
 ---
 
 ¡Disfruta de tu gestor mejorado! 🎉
+
+---
+
+## 🚀 Preparación para Render (Despliegue)
+
+He preparado el proyecto para que puedas subirlo a Render sin problemas:
+
+### 1️⃣ **Variables de Entorno (.env)**
+
+En Render, **no debes subir el archivo .env**. En su lugar, debes configurar las variables en el panel de control:
+
+1. Ve a tu **Dashboard de Render** → Selecciona tu servicio.
+2. Haz clic en **Environment**.
+3. Agregas las siguientes llaves (puedes copiar los valores de tu local):
+   - `SECRET_KEY`: Tu clave secreta (ej: `tu_clave_super_secreta`)
+   - `JWT_SECRET`: (opcional si usas la misma anterior)
+   - `ALGORITHM`: `HS256`
+   - `ACCESS_TOKEN_EXPIRE_MINUTES`: `60`
+   - `DATABASE_URL`: `FinanzasPro.db`
+
+### 2️⃣ **Actualización de Dependencias**
+
+He actualizado `requirements.txt` para incluir librerías esenciales que faltaban para producción:
+
+- `python-jose[cryptography]` (para seguridad JWT)
+- `passlib[bcrypt]` (para encriptar contraseñas)
+- `bcrypt`
+
+### 3️⃣ **Optimización del Dockerfile**
+
+He modificado el `Dockerfile` para que use el puerto dinámico de Render (`$PORT`), asegurando que la aplicación inicie correctamente en la nube.
+
+> **Nota sobre Base de Datos:** Como Render usa discos efímeros, si reinicias el servidor los datos de `FinanzasPro.db` se perderán a menos que configures un **Disk Storage** en Render. ¡Tenlo en cuenta! 💾
