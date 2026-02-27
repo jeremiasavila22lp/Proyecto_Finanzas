@@ -162,10 +162,19 @@ def logout_usuario():
 
 def obtener_usuario_actual(credentials: HTTPAuthorizationCredentials = Depends(security)) -> int:
     """
-    Dependencia para validar el token JWT y obtener el ID del usuario.
-    FastAPI maneja automáticamente el prefijo 'Bearer'.
+    Dependencia para validar la identidad. 
+    Soporta tanto Token JWT largo como Código Numérico Corto (6 dígitos).
     """
     token = credentials.credentials
+    
+    # 1. Intentar como Código Numérico Corto (6 dígitos)
+    if token.isdigit() and len(token) == 6:
+        user_id = mi_gestor.obtener_usuario_por_codigo(token)
+        if user_id:
+            return user_id
+        raise HTTPException(status_code=401, detail="Código de acceso incorrecto o expirado")
+
+    # 2. Intentar como Token JWT Estándar
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id_str: str = payload.get("sub")
@@ -173,7 +182,7 @@ def obtener_usuario_actual(credentials: HTTPAuthorizationCredentials = Depends(s
             raise HTTPException(status_code=401, detail="Token inválido: falta ID de usuario")
         return int(user_id_str)
     except JWTError:
-        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+        raise HTTPException(status_code=401, detail="Token inválido, expirado o formato incorrecto")
     except ValueError:
         raise HTTPException(status_code=401, detail="ID de usuario corrupto")
 

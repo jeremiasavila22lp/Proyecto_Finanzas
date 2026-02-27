@@ -105,12 +105,14 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarGastos();
 });
 
-function copiarToken() {
-    const token = obtenerToken();
-    if (token) {
-        navigator.clipboard.writeText(token).then(() => {
-            mostrarNotificacion("✅ Token copiado al portapapeles", "success");
+function copiarCodigoAcceso() {
+    const usuario = obtenerUsuario();
+    if (usuario && usuario.codigo_acceso) {
+        navigator.clipboard.writeText(usuario.codigo_acceso).then(() => {
+            mostrarNotificacion("📍 Código " + usuario.codigo_acceso + " copiado", "success");
         });
+    } else {
+        mostrarNotificacion("⚠️ No se encontró el código", "warning");
     }
 }
 
