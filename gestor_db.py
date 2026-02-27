@@ -11,7 +11,8 @@ from psycopg2.extras import RealDictCursor
 
 # Configuración de Passlib para hashing seguro (Bcrypt)
 # Lo definimos a nivel de módulo para que sea accesible por todas las clases
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt__truncate_error=False permite que passlib trunque automáticamente a 72 bytes sin lanzar error
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__truncate_error=False)
  
 
 class GestorGastos: 
@@ -275,14 +276,17 @@ class GestorGastos:
         Retorna (True, user_id) si fue exitoso, (False, mensaje_error) si falló
         """
         try:
-            # Bcrypt tiene un límite de 72 bytes. Aseguramos el truncado y la codificación.
-            if isinstance(password, str):
-                password = password.encode('utf-8')
+            # Bcrypt tiene un límite de 72 bytes. Passlib prefiere strings.
+            # Si el password es un string muy largo, lo truncamos asegurando que su versión bytes no exceda 72.
+            if isinstance(password, bytes):
+                password = password.decode('utf-8', errors='ignore')
             
-            if len(password) > 72:
-                password = password[:72]
+            # Truncado seguro: convertimos a bytes, truncamos a 72 y volvemos a decodificar a string
+            pw_bytes = password.encode('utf-8')
+            if len(pw_bytes) > 72:
+                password = pw_bytes[:72].decode('utf-8', errors='ignore')
 
-            # Hashing seguro con bcrypt
+            # Hashing seguro con Passlib (pasando el string ya saneado)
             password_hash = pwd_context.hash(password)
             
             if self.es_postgresql:
@@ -316,11 +320,14 @@ class GestorGastos:
         Retorna (True, user_data) si es correcto, (False, mensaje_error) si falla
         """
         try:
-            if isinstance(password, str):
-                password = password.encode('utf-8')
+            # Bcrypt tiene un límite de 72 bytes. Passlib prefiere strings.
+            if isinstance(password, bytes):
+                password = password.decode('utf-8', errors='ignore')
 
-            if len(password) > 72:
-                password = password[:72]
+            # Truncado seguro para verificar (mismo criterio que en el registro)
+            pw_bytes = password.encode('utf-8')
+            if len(pw_bytes) > 72:
+                password = pw_bytes[:72].decode('utf-8', errors='ignore')
 
             self.cursor.execute(f"""
                 SELECT id, nombre, email, password_hash, fecha_creacion, presupuesto 
