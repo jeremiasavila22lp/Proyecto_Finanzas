@@ -312,7 +312,7 @@ class GestorGastos:
             return (False, "El email ya está registrado")
         except Exception as e:
             logging.error(f"Error al registrar usuario: {e}")
-            return (False, f"Error al crear el usuario: {str(e)}")
+            return (False, f"ERROR_DE_SISTEMA: {str(e)}")
     
     def verificar_login(self, email, password):
         """

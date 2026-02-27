@@ -105,6 +105,9 @@ def registrar_usuario(datos: UsuarioRegistro):
         pw_str = pw_bytes[:72].decode('utf-8', errors='ignore')
         logging.info(f"API: Contraseña de registro truncada de {len(pw_bytes)} a {len(pw_str.encode('utf-8'))} bytes")
     
+    import sys
+    print(f"[DEBUG] Registrando. Pass len: {len(pw_str)} | Bytes: {len(pw_str.encode('utf-8'))}", file=sys.stderr)
+    
     exito, resultado = mi_gestor.registrar_usuario(
         nombre=datos.nombre,
         email=datos.email,
