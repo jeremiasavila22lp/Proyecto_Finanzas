@@ -98,20 +98,10 @@ def registrar_usuario(datos: UsuarioRegistro):
     """
     Registra un nuevo usuario y devuelve un token JWT.
     """
-    # Truncado preventivo antes de enviar al gestor
-    pw_str = datos.password
-    pw_bytes = pw_str.encode('utf-8')
-    if len(pw_bytes) > 72:
-        pw_str = pw_bytes[:72].decode('utf-8', errors='ignore')
-        logging.info(f"API: Contraseña de registro truncada de {len(pw_bytes)} a {len(pw_str.encode('utf-8'))} bytes")
-    
-    import sys
-    print(f"[DEBUG] Registrando. Pass len: {len(pw_str)} | Bytes: {len(pw_str.encode('utf-8'))}", file=sys.stderr)
-    
     exito, resultado = mi_gestor.registrar_usuario(
         nombre=datos.nombre,
         email=datos.email,
-        password=pw_str
+        password=datos.password
     )
     
     if exito:
@@ -138,16 +128,9 @@ def login_usuario(datos: UsuarioLogin):
     """
     Inicia sesión y devuelve un token JWT.
     """
-    # Truncado preventivo antes de enviar al gestor
-    pw_str = datos.password
-    pw_bytes = pw_str.encode('utf-8')
-    if len(pw_bytes) > 72:
-        pw_str = pw_bytes[:72].decode('utf-8', errors='ignore')
-        logging.info(f"API: Contraseña de login truncada de {len(pw_bytes)} a {len(pw_str.encode('utf-8'))} bytes")
-
     exito, resultado = mi_gestor.verificar_login(
         email=datos.email,
-        password=pw_str
+        password=datos.password
     )
     
     if exito:
