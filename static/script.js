@@ -84,12 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const usuario = obtenerUsuario();
     if (usuario) {
         console.log('Usuario logueado:', usuario.nombre);
-        // Mostrar el nombre del usuario en la interfaz
-        const nombreElement = document.getElementById('usuario-nombre');
-        if (nombreElement) {
-            nombreElement.textContent = `Bienvenido, ${usuario.nombre} 👋`;
-            nombreElement.style.color = '#666';
-            nombreElement.style.fontSize = '14px';
+        // Mostrar el nombre en el saludo del header nuevo
+        const saludoHeader = document.getElementById('saludo-header');
+        if (saludoHeader) {
+            saludoHeader.textContent = `¡Hola, ${usuario.nombre.split(' ')[0]}! 👋`;
         }
     }
 
@@ -306,56 +304,29 @@ async function actualizarResumen() {
         const data = await respuesta.json();
         console.log("📊 Datos de resumen recibidos:", data);
 
-        // Actualizamos el Total Gastado
-        const totalNode = document.getElementById('total-gastado');
-        if (totalNode) {
-            totalNode.innerText = `$${data.total_general.toFixed(2)}`;
-            console.log("✅ Total gastado actualizado:", data.total_general);
+        // Actualizamos las tarjetas de la nueva UI
+        document.getElementById('total-gastado').innerText = `$${data.total_general.toFixed(2)}`;
+        document.getElementById('balance-neto').innerText = `$${data.balance_neto.toFixed(2)}`;
+        document.getElementById('valor-presupuesto').innerText = `$${data.presupuesto_limite.toFixed(2)}`;
+
+        // Barra de progreso y texto
+        const progressBar = document.getElementById('progreso-bar');
+        const porcentajeTexto = document.getElementById('porcentaje-texto');
+        if (progressBar && porcentajeTexto) {
+            const pct = data.porcentaje_usado.toFixed(0);
+            progressBar.style.width = `${pct}%`;
+            porcentajeTexto.innerText = `${pct}% Usado`;
+
+            // Color de la barra según alerta
+            if (data.nivel_alerta === 'peligro') progressBar.style.background = 'var(--danger)';
+            else if (data.nivel_alerta === 'advertencia') progressBar.style.background = 'var(--warning)';
+            else progressBar.style.background = 'var(--primary)';
         }
 
-        // Actualizamos el Presupuesto con información visual según el estado
-        const presupuestoNode = document.getElementById('estado-presupuesto');
-        if (presupuestoNode) {
-            const porcentaje = data.porcentaje_usado.toFixed(1);
-            const saldo = data.saldo_disponible.toFixed(2);
-
-            // Cambiar color según el nivel de alerta
-            let color = '#4CAF50'; // Verde (seguro)
-            let emoji = '✅';
-
-            if (data.nivel_alerta === 'advertencia') {
-                color = '#FF9800'; // Naranja
-                emoji = '⚠️';
-            } else if (data.nivel_alerta === 'peligro') {
-                color = '#F44336'; // Rojo
-                emoji = '🚨';
-            }
-
-            presupuestoNode.innerHTML = `
-                <span style="color: ${color}; font-weight: bold;">
-                    ${emoji} ${porcentaje}% usado
-                </span>
-                <br>
-                <small style="color: #a0a0a0;">Disponible: $${saldo}</small>
-            `;
-            console.log("✅ Presupuesto actualizado:", { porcentaje, saldo, nivel: data.nivel_alerta });
-        }
-        const balanceNode = document.getElementById('balance-neto');
-        if (balanceNode) {
-            balanceNode.innerText = `$${data.balance_neto.toFixed(2)}`;
-            balanceNode.style.color = data.balance_neto >= 0 ? '#4CAF50' : '#F44336';
-            console.log("✅ Balance neto actualizado:", data.balance_neto);
-        }
         // --- SISTEMA DE ALERTA VIBRANTE ---
         const alertBar = document.getElementById('alert-system');
         if (alertBar) {
-            if (data.nivel_alerta === 'peligro') {
-                alertBar.style.display = 'flex';
-                console.log("🚨 Alerta de peligro activada!");
-            } else {
-                alertBar.style.display = 'none';
-                console.log("✅ Alerta desactivada.");
-            }
+            alertBar.style.display = (data.nivel_alerta === 'peligro') ? 'flex' : 'none';
         }
     } catch (error) {
         console.error("❌ Error actualizando resumen:", error);

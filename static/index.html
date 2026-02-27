@@ -1,141 +1,176 @@
 <!DOCTYPE html>
 <html lang="es">
 
-
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanzasPro</title>
+    <title>FinanzasPro | Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
-
-    <!-- Toastify CSS -->
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Toastify -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <!-- Toastify JS -->
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </head>
 
 <body>
+    <!-- Alerta de Presupuesto -->
     <div id="alert-system" class="alert-bar" style="display: none;">
-        <span>⚠️ PELIGRO: ¡Has superado tu presupuesto mensual! Revisa tus gastos urgentemente ⚠️</span>
+        <span>🚨 <b>¡ALERTA!:</b> Has superado tu límite mensual de gastos.</span>
     </div>
-    <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="logo">
+            <div
+                style="background: var(--primary); color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                💰</div>
+            <span>Finova</span>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="#" class="nav-item active">📊 Dashboard</a>
+            <a href="#transacciones" class="nav-item">💸 Transacciones</a>
+            <a href="#graficos" class="nav-item">📈 Reportes</a>
+            <a href="/docs" target="_blank" class="nav-item">📘 API Docs</a>
+        </nav>
+
+        <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+            <p style="font-size: 11px; color: #64748b; margin-bottom: 5px;">PLAN ACTUAL</p>
+            <p style="font-weight: 700; font-size: 13px; color: #1e293b;">Versión Pro Gratis</p>
+            <button onclick="mostrarToken()"
+                style="margin-top: 10px; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 11px; cursor: pointer;">🔑
+                Ver Token</button>
+        </div>
+
+        <button onclick="cerrarSesion()" class="logout-btn">Salir de la cuenta</button>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <header class="header">
             <div>
-                <h1>FinanzasPro</h1>
-                <p id="usuario-nombre">Cargando...</p>
+                <h1 id="saludo-header" style="font-size: 1.5rem; font-weight: 700;">¡Hola, cargando...!</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Esto es lo que está pasando con tu dinero hoy.
+                </p>
             </div>
-            <button onclick="cerrarSesion()"
-                style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
-                🚪 Cerrar Sesión
-            </button>
-        </div>
-        <p>Gestiona tus gastos de forma inteligente</p>
 
-        <!-- Dashboard Links -->
-        <div class="nav-links">
-            <a href="/gastos" target="_blank">Ver JSON Gastos</a>
-            <a href="/gastos/resumen" target="_blank">Ver JSON Resumen</a>
-            <a href="/docs" target="_blank">Documentación API</a>
-        </div>
+            <div class="search-bar">
+                <span>🔍</span>
+                <input type="text" id="filtro-busqueda" placeholder="Buscar transacción..." onkeyup="filtrarTabla()">
+            </div>
+        </header>
 
-        <!-- Nueva sección para ver el token fácilmente -->
-        <div id="token-section"
-            style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 12px; padding: 15px; margin: 20px 0; display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h4 style="margin: 0; color: #333;">🔑 Mi Llave de Acceso (Token)</h4>
-                <button onclick="copiarToken()"
-                    style="background: #6200EE; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Copiar</button>
+        <!-- DASHBOARD STATS -->
+        <section class="stats-grid">
+            <div class="card" style="background: var(--primary); color: white;">
+                <p class="card-title" style="color: rgba(255,255,255,0.8)">Balance Disponible</p>
+                <p class="card-value" id="balance-neto">$0.00</p>
+                <div style="background: rgba(255,255,255,0.2); height: 6px; border-radius: 3px; width: 100%;"></div>
+                <p style="font-size: 12px; margin-top: 10px;">+12.5% respecto al mes pasado</p>
             </div>
-            <div id="token-view"
-                style="font-family: monospace; font-size: 11px; color: #666; word-break: break-all; background: white; padding: 10px; border-radius: 8px; border: 1px inset #eee; max-height: 60px; overflow-y: auto;">
-                -- cargando llave --
-            </div>
-            <p style="font-size: 11px; color: #999; margin: 8px 0 0 0;">Usa esta llave en la <a href="/docs"
-                    target="_blank">Documentación API</a> con el botón <b>Authorize</b></p>
-        </div>
-        <div class="resumen-container">
-            <h3> 📊 Resumen de Mes</h3>
-            <div class="kpi-card" style="border-left: 5px solid #2bc48a;">
-                <span>Balance Neto</span>
-                <strong id="balance-neto">$0.00</strong>
-            </div>
-            <div class="kpi-card">
-                <span>Total Gastado</span>
-                <strong id="total-gastado">$0.00</strong>
-            </div>
-            <div class="kpi-card">
-                <span>Presupuesto</span>
-                <strong id="estado-presupuesto">--</strong>
-                <button onclick="editarPresupuesto()"
-                    style="margin-top: 10px; padding: 5px 15px; background: #6200EE; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">
-                    ✏️ Editar
-                </button>
-            </div>
-        </div>
 
-        <div class="form-container">
-            <h3>➕ Nuevo Gasto</h3>
-            <input type="number" id="monto" placeholder="Monto (ej: 1500)" required>
-            <input type="text" id="descripcion" placeholder="Descripcion (ej: Pizza)" required>
-            <input type="text" id="categoria" placeholder="Categoria (ej: Comida)" required>
-            <button onclick="crearGasto()">Guardar Gasto</button>
-        </div>
+            <div class="card">
+                <p class="card-title">Presupuesto Mensual</p>
+                <p class="card-value" id="valor-presupuesto">$5,000.00</p>
+                <div class="progress-container">
+                    <div id="progreso-bar" class="progress-bar"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <p id="porcentaje-texto" style="font-size: 12px; font-weight: 600; color: var(--text-muted);">0%
+                        Usado</p>
+                    <button onclick="editarPresupuesto()"
+                        style="font-size: 12px; color: var(--primary); border: none; background: none; cursor: pointer; font-weight: 700;">EDITAR</button>
+                </div>
+            </div>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin: 30px 0;">
-            <div class="contenedor-grafico"
-                style="flex: 1; min-width: 300px; max-width: 450px; height: 350px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div class="card">
+                <p class="card-title">Gastos Totales</p>
+                <p class="card-value" id="total-gastado" style="color: var(--danger);">$0.00</p>
+                <div style="background: #fee2e2; height: 6px; border-radius: 3px; width: 100%;"></div>
+                <p style="font-size: 12px; margin-top: 10px; color: var(--text-muted);">Gastos acumulados hoy</p>
+            </div>
+        </section>
+
+        <!-- FORMULARIO RÁPIDO -->
+        <section class="card" style="margin-bottom: 32px;">
+            <h3 style="margin-bottom: 15px;">➕ Registrar Nuevo Movimiento</h3>
+            <div class="add-gasto-form">
+                <input type="number" id="monto" placeholder="Monto ($)">
+                <input type="text" id="descripcion" placeholder="¿En qué gastaste? (ej: Supermercado)">
+                <select id="categoria">
+                    <option value="">Selecciona Categoría</option>
+                    <option value="Comida">🍔 Comida</option>
+                    <option value="Transporte">🚗 Transporte</option>
+                    <option value="Hogar">🏠 Hogar</option>
+                    <option value="Salud">💊 Salud</option>
+                    <option value="Ocio">🎬 Ocio</option>
+                    <option value="Otros">📦 Otros</option>
+                </select>
+                <button onclick="crearGasto()" class="primary">Guardar Registro</button>
+            </div>
+        </section>
+
+        <!-- RECENT TRANSACTIONS -->
+        <section id="transacciones">
+            <div class="section-title">
+                <h2 style="font-weight: 700;">Transacciones Recientes</h2>
+                <div>
+                    <button onclick="exportarCSV()"
+                        style="padding: 8px 16px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; cursor: pointer; font-size: 13px;">📥
+                        Exportar Excel</button>
+                    <button onclick="descargarPDF()"
+                        style="padding: 8px 16px; background: #1e293b; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; margin-left: 10px;">📄
+                        Reporte PDF</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>CONCEPTO</th>
+                            <th>ESTADO</th>
+                            <th>FECHA</th>
+                            <th>CATEGORÍA</th>
+                            <th>TOTAL</th>
+                            <th>ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-gastos">
+                        <!-- JS cargar datos -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- CHARTS SECTION -->
+        <section id="graficos" class="charts-grid">
+            <div class="chart-card">
+                <h3>Tendencia Mensual</h3>
+                <canvas id="graficoDiario"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Por Categoría</h3>
                 <canvas id="miGrafico"></canvas>
             </div>
+        </section>
 
-            <div class="contenedor-grafico"
-                style="flex: 1; min-width: 300px; max-width: 450px; height: 350px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                <canvas id="graficoComparacion"></canvas>
-            </div>
-        </div>
+        <!-- COMPARATIVO -->
+        <section class="chart-card" style="margin-top: 24px;">
+            <h3>Comparativa: Presupuesto vs Real</h3>
+            <canvas id="graficoComparacion"></canvas>
+        </section>
+    </main>
 
-        <div class="contenedor-grafico"
-            style="width: 100%; max-width: 900px; height: 400px; margin: 20px auto; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-            <canvas id="graficoDiario"></canvas>
-            <div style="text-align: center; margin-top: 10px; font-weight: bold; color: #4ECDC4;">
-                💰 Acumulado del mes: <span id="acumulado-valor">$0.00</span>
-            </div>
-        </div>
-
-        <!-- Tabla de Gastos -->
-        <div class="gastos-container">
-            <h2>Listado de Gastos Recientes</h2>
-            <input type="text" id="filtro-busqueda" placeholder="🔍 Buscar por descripción o categoría..."
-                onkeyup="filtrarTabla()"
-                style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ddd;">
-
-            <button id="btn-cargar" onclick="cargarGastos()">Actualizar Lista</button>
-            <button onclick="exportarCSV()" style="background: #4CAF50; margin-left: 10px;">
-                📊 Exportar a Excel
-            </button>
-            <button onclick="descargarPDF()" style="background: #E91E63; margin-left: 10px;">
-                📄 Reporte Ejecutivo (PDF)
-            </button>
-
-            <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                <thead>
-                    <tr style="background-color: #BB86FC; color: #000000;">
-                        <th>ID</th>
-                        <th>Descripción</th>
-                        <th>Monto</th>
-                        <th>Categoría</th>
-                        <th>Fecha</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-gastos">
-                    <!-- Aquí se insertarán los datos con JS -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script src="script.js?v=6"></script>
+    <script src="script.js?v=final"></script>
+    <script>
+        function mostrarToken() {
+            const token = localStorage.getItem('token');
+            alert("Tu token de acceso es:\n\n" + token);
+        }
+    </script>
 </body>
 
 </html>
