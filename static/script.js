@@ -392,7 +392,14 @@ async function renderizarGrafico() {
                     backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#F7B731', '#9B59B6']
                 }]
             },
-            options: { plugins: { title: { display: true, text: 'Distribución por Categoría' } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: 'Distribución por Categoría' }
+                }
+            }
         });
     } catch (e) { console.error("Error circular:", e); }
 }
@@ -500,7 +507,15 @@ async function renderizarGraficoDiario() {
                 }]
             },
             options: {
-                plugins: { title: { display: true, text: 'Evolución del Gasto Mensual (Acumulado)' } }
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Evolución del Gasto Mensual (Acumulado)' }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
             }
         });
     } catch (e) { console.error("Error acumulado:", e); }

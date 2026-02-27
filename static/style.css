@@ -248,7 +248,25 @@ button.primary {
     background: white;
     padding: 24px;
     border-radius: var(--radius);
-    min-height: 350px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.chart-card h3 {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+.chart-container.large {
+    height: 450px;
 }
 
 /* Alertas */
@@ -263,4 +281,96 @@ button.primary {
     border-radius: 8px;
     border-left: 5px solid var(--danger);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* --- RESPONSIVIDAD --- */
+@media (max-width: 1200px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 15px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .logo {
+        margin-bottom: 0;
+    }
+
+    .nav-menu {
+        display: flex;
+        gap: 10px;
+        flex-grow: 0;
+    }
+
+    .nav-item {
+        margin-bottom: 0;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    .sidebar div:has(p) {
+        display: none;
+        /* Ocultar sección de plan en móvil */
+    }
+
+    .logout-btn {
+        display: none;
+        /* Ocultar logout en móvil o moverlo */
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .search-bar {
+        width: 100%;
+        margin-top: 15px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .add-gasto-form {
+        grid-template-columns: 1fr;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .chart-container {
+        height: 250px;
+    }
+
+    .chart-container.large {
+        height: 350px;
+    }
 }
