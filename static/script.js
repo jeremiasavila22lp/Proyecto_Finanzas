@@ -102,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Cargar datos al iniciar
+    refrescarPerfilUsuario();
     cargarGastos();
 });
 
@@ -564,3 +565,15 @@ async function descargarPDF() {
         alert("Ocurrió un error al intentar generar el reporte.");
     }
 }
+
+async function refrescarPerfilUsuario() {
+    try {
+        const respuesta = await fetch('/auth/me', { headers: getAuthHeaders() });
+        if (respuesta.ok) {
+            const data = await respuesta.json();
+            localStorage.setItem('usuario', JSON.stringify(data)); // Actualizamos el PIN aquí
+            console.log("✅ Perfil sincronizado.");
+        }
+    } catch (e) { console.error("Error al refrescar perfil:", e); }
+}
+

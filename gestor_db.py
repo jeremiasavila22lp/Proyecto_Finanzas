@@ -80,6 +80,27 @@ class GestorGastos:
                         FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
                     )
                 """)
+                # 2. MIGRACIÓN: Asegurar que existe la columna 'codigo_acceso'
+                try:
+                    cur.execute("ALTER TABLE usuarios ADD COLUMN codigo_acceso TEXT")
+                    self.conexion.commit()
+                    print("[MIGRACIÓN] Columna 'codigo_acceso' añadida correctamente.")
+                except:
+                    # Si ya existe, no hará nada
+                    pass
+
+                # 3. MIGRACIÓN: Generar PIN para usuarios que no lo tengan
+                cur.execute("SELECT id FROM usuarios WHERE codigo_acceso IS NULL")
+                usuarios_sin_pin = cur.fetchall()
+                if usuarios_sin_pin:
+                    import random
+                    print(f"[MIGRACIÓN] Generando PIN para {len(usuarios_sin_pin)} usuarios...")
+                    for u in usuarios_sin_pin:
+                        u_id = u['id'] if self.es_postgresql else u[0]
+                        nuevo_pin = "".join([str(random.randint(0, 9)) for _ in range(6)])
+                        cur.execute(f"UPDATE usuarios SET codigo_acceso = {self.p} WHERE id = {self.p}", (nuevo_pin, u_id))
+                        self.conexion.commit()
+
                 self.conexion.commit()
             finally:
                 cur.close()
