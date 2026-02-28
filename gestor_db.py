@@ -86,11 +86,16 @@ class GestorGastos:
                     self.conexion.commit()
                     print("[MIGRACIÓN] Columna 'codigo_acceso' añadida correctamente.")
                 except:
-                    # Si ya existe, no hará nada
-                    pass
+                    if self.es_postgresql:
+                        self.conexion.rollback()
+                        # IMPORTANTE: Re-crear el cursor tras un rollback en Postgres
+                        cur.close()
+                        cur = self._get_cursor() # This line ensures the cursor is reset after a rollback in PostgreSQL
+                    pass 
 
                 # 3. MIGRACIÓN: Generar PIN para usuarios que no lo tengan
                 cur.execute("SELECT id FROM usuarios WHERE codigo_acceso IS NULL")
+
                 usuarios_sin_pin = cur.fetchall()
                 if usuarios_sin_pin:
                     import random
