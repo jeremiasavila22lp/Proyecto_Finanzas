@@ -154,24 +154,6 @@ def login_usuario(datos: UsuarioLogin):
     else:
         raise HTTPException(status_code=401, detail=resultado)
 
-@app.get("/auth/me")
-def obtener_perfil(user_id: int = Depends(obtener_usuario_actual)):
-    """
-    Obtiene el perfil del usuario autenticado.
-    """
-    usuario = mi_gestor.obtener_usuario_por_id(user_id)
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return usuario
-
-@app.post("/auth/logout")
-def logout_usuario():
-    """
-    Con JWT el logout se maneja en el cliente (eliminando el token).
-    Este endpoint es informativo.
-    """
-    return {"mensaje": "Para cerrar sesión, elimine el token del almacenamiento local"}
-
 # ============ SEGURIDAD Y JWT ============
 
 def obtener_usuario_actual(credentials: HTTPAuthorizationCredentials = Depends(security)) -> int:
@@ -199,6 +181,25 @@ def obtener_usuario_actual(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Token inválido, expirado o formato incorrecto")
     except ValueError:
         raise HTTPException(status_code=401, detail="ID de usuario corrupto")
+
+@app.get("/auth/me")
+def obtener_perfil(user_id: int = Depends(obtener_usuario_actual)):
+    """
+    Obtiene el perfil del usuario autenticado.
+    """
+    usuario = mi_gestor.obtener_usuario_por_id(user_id)
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return usuario
+
+@app.post("/auth/logout")
+def logout_usuario():
+    """
+    Con JWT el logout se maneja en el cliente (eliminando el token).
+    Este endpoint es informativo.
+    """
+    return {"mensaje": "Para cerrar sesión, elimine el token del almacenamiento local"}
+
 
 @app.put("/usuario/presupuesto", status_code=200)
 def actualizar_presupuesto(datos: PresupuestoUpdate, user_id: int = Depends(obtener_usuario_actual)):
