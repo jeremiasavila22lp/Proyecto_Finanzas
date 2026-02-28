@@ -1,14 +1,13 @@
 from fastapi import FastAPI, HTTPException, Header, Depends, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from gestor_db import GestorConPresupuesto
 from pydantic import BaseModel, Field
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from fastapi.responses import FileResponse
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
@@ -91,6 +90,11 @@ def inicio():
     """Redirige a la interfaz web"""
     return RedirectResponse(url="/static/login.html")
 
+@app.get("/api-docs-pretty")
+def docs_pretty():
+    """Ruta alternativa para servir el HTML de documentación"""
+    return FileResponse('static/api_docs.html')
+
 # ============ ENDPOINTS DE AUTENTICACIÓN ============
 
 @app.post("/auth/registro", status_code=201)
@@ -149,6 +153,16 @@ def login_usuario(datos: UsuarioLogin):
         }
     else:
         raise HTTPException(status_code=401, detail=resultado)
+
+@app.get("/auth/me")
+def obtener_perfil(user_id: int = Depends(obtener_usuario_actual)):
+    """
+    Obtiene el perfil del usuario autenticado.
+    """
+    usuario = mi_gestor.obtener_usuario_por_id(user_id)
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return usuario
 
 @app.post("/auth/logout")
 def logout_usuario():
